@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! class_exists( 'RWMB_Time_Field' ) )
 {
-	class RWMB_Time_Field
+	class RWMB_Time_Field extends RWMB_Field
 	{
 		/**
 		 * Enqueue scripts and styles
@@ -22,19 +22,23 @@ if ( ! class_exists( 'RWMB_Time_Field' ) )
 
 			$url = RWMB_JS_URL . 'jqueryui';
 			wp_register_script( 'jquery-ui-timepicker', "{$url}/jquery-ui-timepicker-addon.js", array( 'jquery-ui-datepicker', 'jquery-ui-slider' ), '0.9.7', true );
+
+			$locale = str_replace( '_', '-', get_locale() );
+			wp_register_script( 'jquery-ui-timepicker-i18n', "{$url}/timepicker-i18n/jquery-ui-timepicker-{$locale}.js", array( 'jquery-ui-timepicker' ), '0.9.7', true );
+
 			wp_enqueue_script( 'rwmb-time', RWMB_JS_URL.'time.js', array( 'jquery-ui-timepicker' ), RWMB_VER, true );
+			wp_localize_script( 'rwmb-time', 'RWMB_Timepicker', array( 'lang' => $locale ) );
 		}
 
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
 		 * @param mixed  $meta
 		 * @param array  $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			return sprintf(
 				'<input type="text" class="rwmb-time" name="%s" value="%s" id="%s" size="%s" data-options="%s" />',

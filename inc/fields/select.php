@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( !class_exists( 'RWMB_Select_Field' ) )
 {
-	class RWMB_Select_Field
+	class RWMB_Select_Field extends RWMB_Field
 	{
 		/**
 		 * Enqueue scripts and styles
@@ -19,32 +19,23 @@ if ( !class_exists( 'RWMB_Select_Field' ) )
 		/**
 		 * Get field HTML
 		 *
-		 * @param string $html
 		 * @param mixed  $meta
 		 * @param array  $field
 		 *
 		 * @return string
 		 */
-		static function html( $html, $meta, $field )
+		static function html( $meta, $field )
 		{
 			$html = sprintf(
-				'<select class="rwmb-select" name="%s" id="%s"%s>',
+				'<select class="rwmb-select" name="%s" id="%s" size="%s"%s>',
 				$field['field_name'],
 				$field['id'],
+				$field['size'],
 				$field['multiple'] ? ' multiple="multiple"' : ''
 			);
-			$option = '<option value="%s" %s>%s</option>';
 
-			foreach ( $field['options'] as $value => $label )
-			{
-				$html .= sprintf(
-					$option,
-					$value,
-					/*  selected( in_array( $value, $meta ), true, false ),*/
-					selected( in_array( $value, (array)$meta ), true, false ),
-					$label
-				);
-			}
+			$html .= self::options_html( $field, $meta );
+
 			$html .= '</select>';
 
 			return $html;
@@ -59,14 +50,13 @@ if ( !class_exists( 'RWMB_Select_Field' ) )
 		 *
 		 * TODO: A good way to ALWAYS save values in single entry in DB, while maintaining backward compatibility
 		 *
-		 * @param $meta
 		 * @param $post_id
 		 * @param $saved
 		 * @param $field
 		 *
 		 * @return array
 		 */
-		static function meta( $meta, $post_id, $saved, $field )
+		static function meta( $post_id, $saved, $field )
 		{
 			$single = $field['clone'] || !$field['multiple'];
 			$meta = get_post_meta( $post_id, $field['id'], $single );
@@ -93,7 +83,7 @@ if ( !class_exists( 'RWMB_Select_Field' ) )
 		{
 			if ( !$field['clone'] )
 			{
-				RW_Meta_Box::save( $new, $old, $post_id, $field );
+				parent::save( $new, $old, $post_id, $field );
 				return;
 			}
 
@@ -112,10 +102,44 @@ if ( !class_exists( 'RWMB_Select_Field' ) )
 		 */
 		static function normalize_field( $field )
 		{
-			$field['field_name'] = $field['id'];
+			$field = wp_parse_args( $field, array(
+				'desc'        => '',
+				'name'        => $field['id'],
+				'size'        => $field['multiple'] ? 5 : 0,
+				'placeholder' => '',
+			) );
 			if ( !$field['clone'] && $field['multiple'] )
 				$field['field_name'] .= '[]';
 			return $field;
+		}
+
+		/**
+		 * Creates html for options
+		 *
+		 * @param array $field
+		 * @param mixed $meta
+		 *
+		 * @return array
+		 */
+		static function options_html( $field, $meta )
+		{
+			$html = '';
+			if ( $field['placeholder'] )
+				$html = 'select' == $field['type'] ? "<option value=''>{$field['placeholder']}</option>" : '<option></option>';
+
+			$option = '<option value="%s"%s>%s</option>';
+
+			foreach ( $field['options'] as $value => $label )
+			{
+				$html .= sprintf(
+					$option,
+					$value,
+					selected( in_array( $value, (array)$meta ), true, false ),
+					$label
+				);
+			}
+
+			return $html;
 		}
 	}
 }
